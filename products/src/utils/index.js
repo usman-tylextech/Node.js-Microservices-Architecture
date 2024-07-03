@@ -51,17 +51,24 @@ module.exports.FormateData = (data) => {
 };
 
 
-module.exports.PublishCustomEvent = async(playload) => {
-    axios.post('http://localhost:8080/customer/app-events', {
-      playload
-    })
-}
+module.exports.PublishCustomEvent = async (payload) => {
+  try {
+    const response = await axios.post('http://localhost:8000/customer/app-events', {
+      payload,
+    });
 
+    console.log('Event published successfully:', response.data);
+    return response.data; 
+  } catch (error) {
+    console.error('Error publishing event:', error.message);
+    throw error; 
+  }
+};
 
-module.exports.PublishShoppingEvent = async(playload) => {
+module.exports.PublishShoppingEvent = async(payload) => {
    
-  axios.post('http://localhost:8080/shopping/app-events', {
-    playload
+  axios.post('http://localhost:8000/shopping/app-events', {
+    payload
   })
 
 }

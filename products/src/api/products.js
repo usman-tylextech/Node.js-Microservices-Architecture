@@ -68,14 +68,15 @@ module.exports = (app) => {
         const { _id } = req.user;
         
 
-        // get playload to send customer service 
+        // get payload to send customer service 
         
         try {
-            const {data} =  await service.GetProductByPlayload(_id, {productId: req.body._id} , 'ADD_TO_WISHLIST')
+            const {data} =  await service.GetProductBypayload(_id, {productId: req.body._id} , 'ADD_TO_WISHLIST')
+            console.log("WISHLISHT PRODUCT .JS -----> ",data)
            PublishCustomEvent(data)
             return res.status(200).json(data.data.product);
         } catch (err) {
-            
+            console.log("PRODUCT ERROR  - -- - - -> " , err)
         }
     });
     
@@ -85,7 +86,7 @@ module.exports = (app) => {
         const productId = req.params.id;
 
         try {
-            const {data} =  await service.GetProductByPlayload(_id, {productId} , 'REMOVE_FROM_WISHLIST')
+            const {data} =  await service.GetProductBypayload(_id, {productId} , 'REMOVE_FROM_WISHLIST')
 
 
             PublishCustomEvent(data);
@@ -103,13 +104,16 @@ module.exports = (app) => {
         
         try {     
 
-            const {data} =  await service.GetProductByPlayload(_id, {productId} , 'REMOVE_FROM_WISHLIST')
+            const {data} =  await service.GetProductBypayload(_id, {productId: req.body._id, qty: req.body.qty} , 'ADD_TO_CART')
 
-            const product = await service.GetProductById(_id);
-    
-            const result =  await customerService.ManageCart(req.user._id, product, qty, false);
-    
-            return res.status(200).json(result);
+            PublishCustomEvent(data);
+            PublishShoppingEvent(data);
+
+            const response = {
+                product: data.data.product,
+                unit:data.data.unit
+            }
+            return res.status(200).json(response);
             
         } catch (err) {
             next(err)
@@ -119,19 +123,32 @@ module.exports = (app) => {
     app.delete('/cart/:id',UserAuth, async (req,res,next) => {
 
         const { _id } = req.user;
+        const productId = req.params.id;
 
         try {
-            const product = await service.GetProductById(req.params.id);
-            const result = await customerService.ManageCart(_id, product, 0 , true);             
-            return res.status(200).json(result);
+           
+            
+            const {data} =  await service.GetProductBypayload(_id, {productId} , 'REMOVE_FROM_CART')
+            
+            
+            PublishCustomEvent(data);
+            PublishShoppingEvent(data);
+
+            const response = {
+                product: data.data.product,
+                unit:data.data.unit
+            }
+            return res.status(200).json(response);
+
+  
         } catch (err) {
             next(err)
         }
     });
 
-    //get Top products and category
+    
     app.get('/', async (req,res,next) => {
-        //check validation
+        
         try {
             const { data} = await service.GetProducts();        
             return res.status(200).json(data);

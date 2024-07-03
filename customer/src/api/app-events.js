@@ -6,11 +6,12 @@ module.exports = (app) =>{
     const service = new Customerservice();
     app.use('/app-events' , async (req, res, next) =>{
 
-        const {playload} = req.body;
+        const {payload} = req.body;
+        console.log("CUSTOMER SERVICE PAYLOD -----> ",payload );
+        service.SubscribeEvents(payload)
 
-        service.SubscribeEvents(playload)
-        console.log("========== Shopping Service Event ==========")
-        return res.status(200).json(playload)
+        console.log("========== Customer Service Received  Event ==========")
+        return res.status(200).json(payload);
 })
 
 

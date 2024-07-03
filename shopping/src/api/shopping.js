@@ -1,20 +1,26 @@
 const ShoppingService = require("../services/shopping-service");
-const UserService = require('../services/customer-service');
 const UserAuth = require('./middlewares/auth');
+const { PublishCustomEvent } = require("../utils");
 
 module.exports = (app) => {
     
     const service = new ShoppingService();
-    const userService = new UserService();
-
-    app.post('/shopping/order',UserAuth, async (req,res,next) => {
+   
+    app.post('/order',UserAuth, async (req,res,next) => {
 
         const { _id } = req.user;
         const { txnNumber } = req.body;
-
+          
+        console.log("txnNumber for txId:" , txnNumber);
+        console.log("user id for txId:" , _id);
 
         try {
             const { data } = await service.PlaceOrder({_id, txnNumber});
+
+             const payload = await service.GetOrderBypayload(_id, data, 'CREATE_ORDER')
+              
+             PublishCustomEvent(payload);
+
             return res.status(200).json(data);
             
         } catch (err) {
@@ -23,13 +29,13 @@ module.exports = (app) => {
 
     });
 
-    app.get('/shopping/orders',UserAuth, async (req,res,next) => {
+    app.get('/orders',UserAuth, async (req,res,next) => {
 
         const { _id } = req.user;
 
         try {
-            const { data } = await userService.GetShopingDetails(_id);
-            return res.status(200).json(data.orders);
+            const { data } = await service.GetOrders(_id);
+            return res.status(200).json(data)
         } catch (err) {
             next(err);
         }
@@ -37,12 +43,12 @@ module.exports = (app) => {
     });
        
     
-    app.get('/shopping/cart', UserAuth, async (req,res,next) => {
+    app.get('/cart', UserAuth, async (req,res,next) => {
 
         const { _id } = req.user;
         try {
-            const { data } = await userService.GetShopingDetails(_id);
-            return res.status(200).json(data.cart);
+            const { data } = await service.getCart({_id});
+            return res.status(200).json(data);
         } catch (err) {
             next(err);
         }

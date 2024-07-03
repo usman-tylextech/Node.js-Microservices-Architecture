@@ -112,7 +112,8 @@ class CustomerService {
 
     async AddToWishlist(customerId, product){
         try {
-            const wishlistResult = await this.repository.AddWishlistItem(customerId, product);        
+            const wishlistResult = await this.repository.AddWishlistItem(customerId, product);  
+            console.log("AddToWishlist -----> " , this.AddToWishlist)      
            return FormateData(wishlistResult);
     
         } catch (err) {
@@ -138,34 +139,74 @@ class CustomerService {
         }
     }
 
-    async SubscribeEvents(payload){
- 
-        const { event, data } =  payload;
-
-        const { userId, product, order, qty } = data;
-
-        switch(event){
-            case 'ADD_TO_WISHLIST':
-            case 'REMOVE_FROM_WISHLIST':
-                this.AddToWishlist(userId,product)
-                break;
-            case 'ADD_TO_CART':
-                this.ManageCart(userId,product, qty, false);
-                break;
-            case 'REMOVE_FROM_CART':
-                this.ManageCart(userId,product,qty, true);
-                break;
-            case 'CREATE_ORDER':
-                this.ManageOrder(userId,order);
-                break;
-            case 'TEST':
-                console.log("Working ...... Subscriber")
-            default:
-                break;
+    async SubscribeEvents(payload) {
+        try {
+            console.log('Received payload:', JSON.stringify(payload, null, 2));
+    
+            
+            let event, data;
+            if (payload.data && payload.data.event && payload.data.data) {
+              
+                event = payload.data.event;
+                data = payload.data.data;
+            } else if (payload.event && payload.data) {
+        
+                event = payload.event;
+                data = payload.data;
+            } else {
+                throw new BadRequestError('Invalid payload structure');
+            }
+    
+            console.log('Event:', event);
+            console.log('Data:', JSON.stringify(data, null, 2));
+    
+            const { userId, product, order, qty } = data;
+    
+            switch (event) {
+                case 'ADD_TO_WISHLIST':
+                    if (!userId || !product) {
+                        throw new BadRequestError('Missing userId or product in ADD_TO_WISHLIST event');
+                    }
+                    await this.AddToWishlist(userId, product);
+                    break;
+                case 'REMOVE_FROM_WISHLIST':
+                    if (!userId || !product) {
+                        throw new BadRequestError('Missing userId or product in REMOVE_FROM_WISHLIST event');
+                    }
+                    await this.AddToWishlist(userId, product);
+                    break;
+                case 'ADD_TO_CART':
+                    if (!userId || !product || qty === undefined) {
+                        throw new BadRequestError('Missing userId, product, or qty in ADD_TO_CART event');
+                    }
+                    await this.ManageCart(userId, product, qty, false);
+                    break;
+                case 'REMOVE_FROM_CART':
+                    if (!userId || !product || qty === undefined) {
+                        throw new BadRequestError('Missing userId, product, or qty in REMOVE_FROM_CART event');
+                    }
+                    await this.ManageCart(userId, product, qty, true);
+                    break;
+                case 'CREATE_ORDER':
+                    if (!userId || !order) {
+                        throw new BadRequestError('Missing userId or order in CREATE_ORDER event');
+                    }
+                    await this.ManageOrder(userId, order);
+                    break;
+                default:
+                    throw new BadRequestError(`Unhandled event type: ${event}`);
+            }
+        } catch (error) {
+            console.error('Error processing event:', {
+                errorMessage: error.message,
+                errorStack: error.stack,
+                receivedPayload: JSON.stringify(payload, null, 2)
+            });
+            throw error;
         }
- 
     }
-
+    
+    
 }
 
 module.exports = CustomerService;

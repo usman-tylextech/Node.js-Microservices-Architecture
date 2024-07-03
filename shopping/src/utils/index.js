@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-
+const axios = require("axios");
 const { APP_SECRET } = require("../config");
 
 //Utility functions
@@ -47,5 +47,14 @@ module.exports.FormateData = (data) => {
     return { data };
   } else {
     throw new Error("Data Not found!");
+  }
+};
+
+
+module.exports.PublishCustomEvent = async (payload) => {
+  try {
+    await axios.post('http://localhost:8000/customer/app-events', { payload });
+  } catch (error) {
+    console.log("Error publishing custom event in shopping file utils index.js:", error.message);
   }
 };

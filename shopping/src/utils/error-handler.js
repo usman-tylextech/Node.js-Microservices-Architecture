@@ -1,72 +1,80 @@
-const { createLogger, transports } = require('winston');
+const { createLogger, transports, format } = require('winston');
 const { AppError } = require('./app-errors');
 
-
 const LogErrors = createLogger({
+    format: format.combine(
+        format.timestamp(),
+        format.printf(({ timestamp, level, message }) => {
+            return `${timestamp} - ${level}: ${message}`;
+        })
+    ),
     transports: [
-      new transports.Console(),
-      new transports.File({ filename: 'app_error.log' })
+        new transports.Console(),
+        new transports.File({ filename: 'app_error.log' })
     ]
-  });
-    
+});
 
 class ErrorLogger {
-    constructor(){}
-    async logError(err){
+    constructor() {}
+
+    async logError(err) {
+        const stackTrace = this.extractStackTrace(err);
+
         console.log('==================== Start Error Logger ===============');
         LogErrors.log({
             private: true,
             level: 'error',
-            message: `${new Date()}-${JSON.stringify(err)}`
-          });
+            message: `${new Date()} - ${err.message || 'No error message'} - ${stackTrace}`
+        });
         console.log('==================== End Error Logger ===============');
-        // log error with Logger plugins
-      
-        return false;
     }
 
-    isTrustError(error){
-        if(error instanceof AppError){
-            return error.isOperational;
-        }else{
-            return false;
+    isTrustError(error) {
+        return error instanceof AppError && error.isOperational;
+    }
+
+    extractStackTrace(error) {
+        if (error.stack) {
+            // Extract the first line of the stack trace
+            const stackLines = error.stack.split('\n');
+            if (stackLines.length > 1) {
+                return stackLines[1].trim(); // The second line contains the file name and line number
+            }
         }
+        return 'No stack trace available';
     }
 }
 
-const ErrorHandler = async(err,req,res,next) => {
-    
-    const errorLogger = new ErrorLogger();
+const errorLogger = new ErrorLogger();
 
-    process.on('uncaughtException', (reason, promise) => {
-        console.log(reason, 'UNHANDLED');
-        throw reason; // need to take care
-    })
+process.on('unhandledRejection', (reason, promise) => {
+    console.log(reason, 'UNHANDLED REJECTION');
+    throw reason; // this will be caught by uncaughtException handler
+});
 
-    process.on('uncaughtException', (error) => {
-        errorLogger.logError(error);
-        if(errorLogger.isTrustError(err)){
-            //process exist // need restart
-        }
-    })
-    
-    // console.log(err.description, '-------> DESCRIPTION')
-    // console.log(err.message, '-------> MESSAGE')
-    // console.log(err.name, '-------> NAME')
-    if(err){
+process.on('uncaughtException', async (error) => {
+    await errorLogger.logError(error);
+    if (!errorLogger.isTrustError(error)) {
+        process.exit(1); // exit the process for non-operational errors
+    }
+});
+
+const ErrorHandler = async (err, req, res, next) => {
+    if (err) {
         await errorLogger.logError(err);
-        if(errorLogger.isTrustError(err)){
-            if(err.errorStack){
-                const errorDescription = err.errorStack;
-                return res.status(err.statusCode).json({'message': errorDescription})
+        const statusCode = err.statusCode || 500;
+        const message = err.message || 'Internal Server Error';
+
+        if (errorLogger.isTrustError(err)) {
+            if (err.errorStack) {
+                return res.status(statusCode).json({ 'message': err.errorStack });
             }
-            return res.status(err.statusCode).json({'message': err.message })
-        }else{
-            //process exit // terriablly wrong with flow need restart
+            return res.status(statusCode).json({ 'message': message });
+        } else {
+            return res.status(statusCode).json({ 'message': message });
         }
-        return res.status(err.statusCode).json({'message': err.message})
     }
     next();
-}
+};
 
 module.exports = ErrorHandler;

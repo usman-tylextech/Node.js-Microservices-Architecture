@@ -75,17 +75,17 @@ class ProductService {
         }
     }
 
-    async GetProductByPlayload(userId , {productId , qty} , event) {
+    async GetProductBypayload(userId , {productId , qty} , event) {
     
         const product = await this.repository.FindById(productId)
 
 
         if(product){
-            const playload = {
+            const payload = {
                 event : event,
                 data: {userId , product , qty}
             }
-            return FormateData(playload)
+            return FormateData(payload)
         }else{
             return FormateData({error: "Product not found"})
         }
