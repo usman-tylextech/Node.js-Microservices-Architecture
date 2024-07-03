@@ -120,31 +120,38 @@ module.exports = (app) => {
         }
     });
     
-    app.delete('/cart/:id',UserAuth, async (req,res,next) => {
-
+    app.delete('/cart/:id', UserAuth, async (req, res, next) => {
         const { _id } = req.user;
         const productId = req.params.id;
-
+       
         try {
            
-            
-            const {data} =  await service.GetProductBypayload(_id, {productId} , 'REMOVE_FROM_CART')
-            
+            const qty = 1;
+    
+    
+            const payload = {
+                productId,
+                qty
+            };
+    
+            const { data } = await service.GetProductBypayload(_id, payload, 'REMOVE_FROM_CART');
+    
             
             PublishCustomEvent(data);
             PublishShoppingEvent(data);
-
+    
+            
             const response = {
                 product: data.data.product,
-                unit:data.data.unit
-            }
+                unit: data.data.unit
+            };
+    
             return res.status(200).json(response);
-
-  
         } catch (err) {
-            next(err)
+            next(err);
         }
     });
+    
 
     
     app.get('/', async (req,res,next) => {
