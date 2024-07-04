@@ -80,7 +80,7 @@ module.exports.FormateData = (data) => {
 
   // subscribe messages
   
-    module.exports.SubscribeMessages = async (channel,service , ) => {
+    module.exports.SubscribeMessages = async (channel,service ) => {
  
      const appQueue = await channel.assertQueue(QUEUE_NAME);
 
@@ -89,6 +89,7 @@ module.exports.FormateData = (data) => {
      channel.consume(appQueue.queue, data =>{
        console.log('received data');
        console.log(data.content.toString());
+       service.SubscribeEvents(data.content.toString());
        channel.ack(data)
      })
     }
