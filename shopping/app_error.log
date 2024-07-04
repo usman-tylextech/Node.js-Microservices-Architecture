@@ -1,0 +1,2 @@
+2024-07-03T16:45:26.964Z - error: Wed Jul 03 2024 21:45:26 GMT+0500 (Pakistan Standard Time) - amqplib is not defined - at module.exports.CreateChannel (D:\Micorservices Architecture\shopping\src\utils\index.js:70:28)
+2024-07-03T16:46:08.100Z - error: Wed Jul 03 2024 21:46:08 GMT+0500 (Pakistan Standard Time) - Cannot read properties of undefined (reading 'connect') - at module.exports.CreateChannel (D:\Micorservices Architecture\shopping\src\utils\index.js:70:42)
