@@ -113,7 +113,7 @@ class CustomerService {
     async AddToWishlist(customerId, product){
         try {
             const wishlistResult = await this.repository.AddWishlistItem(customerId, product);  
-            console.log("AddToWishlist -----> " , this.AddToWishlist)      
+                
            return FormateData(wishlistResult);
     
         } catch (err) {
@@ -141,6 +141,8 @@ class CustomerService {
 
     async SubscribeEvents(payload) {
         try {
+
+            payload = JSON.parse(payload)
             console.log('Received payload:', JSON.stringify(payload, null, 2));
     
             
